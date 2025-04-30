@@ -55,7 +55,7 @@ function Home() {
     }
 
     // 방문자 데이터 전송
-    const data = JSON.stringify({
+    const dataObj = {
       id: getUVfromCookie(),
       landingUrl: window.location.href,
       ip: window.ip || 'unknown',
@@ -63,17 +63,26 @@ function Home() {
       time_stamp: getTimeStamp(),
       utm: new URLSearchParams(window.location.search).get("utm"),
       device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-    });
+    };
+    console.log('방문자 데이터:', dataObj); // 데이터 로깅
 
     const addrScript = 'https://script.google.com/macros/s/AKfycbwGfbAmUgQ9aka1OMPPGoITHAP34bGuYfQkiBWVi1-EpZdl_5or03LF9K99IfB9SWeI/exec';
 
-    axios.get(addrScript + '?action=insert&table=visitors&data=' + data)
-      .then(response => {
-        console.log(JSON.stringify(response));
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+    $.ajax({
+      url: addrScript,
+      dataType: 'jsonp',
+      data: {
+        action: 'insert',
+        table: 'visitors',
+        data: JSON.stringify(dataObj)
+      },
+      success: function(response) {
+        console.log('서버 응답:', response);
+      },
+      error: function(err) {
+        console.error('에러:', err);
+      }
+    });
 
     // 이메일 제출 이벤트 핸들러
     const handleSubmit = function() {
