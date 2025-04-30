@@ -194,7 +194,7 @@ function Home() {
           </div>
           <div className="row" style={{backgroundColor: 'white'}}>
             <div className="col-md-12 text-center">
-              <h2 className="section-title" style={{marginBottom: '-20px', marginTop: '20px', fontSize: '24px'}}>파일과 노트를 한 번에 볼 수 없을까?</h2>
+              <h2 className="section-title" style={{marginBottom: '-20px', marginTop: '20px', fontSize: '21px', fontWeight: 'bold'}}>파일과 노트를 한 번에 볼 수 없을까?</h2>
               <img src="/img/example2.png" className="logo" alt="questionmark" />
             </div>
           </div>
