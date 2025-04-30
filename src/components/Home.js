@@ -181,32 +181,32 @@ function Home() {
           <div className="row">
             <div className="col-md-12 text-center">
               <h1 className="section-title">What's GodNote?</h1>
-              <p className="section-subtitle">평소 노트북 타이핑으로 필기하는 분이라면 주목!</p>
-              <p className="section-subtitle" style={{marginTop: '-45px'}}>노트북으로 필기하는 여러분의 50%는 이런 불편함에 공감하실 것입니다.</p>
+              <p className="section-subtitle">평소 노트북으로 필기하는 분이라면 주목!</p>
+              <p className="section-subtitle" style={{marginTop: '-45px'}}>평소 불편함을 느끼진 않으셨나요?</p>
             </div>
           </div>
           <div className="row">
             <div className="col-md-12 text-center">
-              <h3 className="section-title" style={{marginBottom: '20px'}}>항상 슬라이드 파일 옆에 노트 띄워놓고...</h3>
-              <h3 className="section-title" style={{marginBottom: '40px'}}>페이지 번호도 일일이 적으며 필기하고 있나요?</h3>
+              <h3 className="section-title" style={{fontSize: '18px'}}>항상 슬라이드 파일 옆에 노트 띄워놓고...</h3>
+              <h3 className="section-title" style={{marginBottom: '40px', fontSize: '18px'}}>페이지 번호도 적어가며 필기하고 있으신가요?</h3>
               <img src="/img/example1.png" className="logo" alt="noteexample" />
             </div>
           </div>
           <div className="row" style={{backgroundColor: 'white'}}>
             <div className="col-md-12 text-center">
-              <h2 className="section-title" style={{marginBottom: '-20px', marginTop: '20px', fontSize: '24px'}}>두 개를 한 번에 볼 수 없을까?</h2>
+              <h2 className="section-title" style={{marginBottom: '-20px', marginTop: '20px', fontSize: '24px'}}>파일과 노트를 한 번에 볼 수 없을까?</h2>
               <img src="/img/example2.png" className="logo" alt="questionmark" />
             </div>
           </div>
           <div className="row">
             <div className="col-md-12 text-center">
-              <h3 className="section-title" style={{marginBottom: '20px'}}>GodNote는 이러한 생각에서 출발하여,</h3>
-              <h3 className="section-title" style={{marginBottom: '40px'}}>여러분에게 더 편리한 노트 환경을 제공합니다.</h3>
+              <h3 className="section-title" style={{marginBottom: '0px', fontSize: '18px'}}>GodNote는 이러한 생각에서 출발하여,</h3>
+              <h3 className="section-title" style={{marginBottom: '40px', fontSize: '18px'}}>여러분에게 더 편리한 노트 환경을 제공합니다.</h3>
               <img src="/img/example3.png" className="logo" alt="godnotedemo" />
             </div>
 
             <div className="col-md-12 text-center">
-              <h3 className="section-title" style={{marginTop: '40px'}}>필기의 신세계를 느껴보세요!</h3>
+              <h3 className="section-title" style={{marginTop: '40px', fontSize: '20px', fontWeight: 'bold'}}>필기의 신세계를 느껴보세요!</h3>
             </div>
             <div className="col-md-6">
               <div className="feature-box">
@@ -248,8 +248,8 @@ function Home() {
             </div>
             <div className="col-md-6">
               <div className="faq-item">
-                <h3>가격은 어떻게 되나요?</h3>
-                <p>2025년 상반기에 출시될 베타 버전은 무료로 서비스를 제공할 예정입니다.</p>
+                <h3>첨부하는 파일의 용량 제한은 없나요?</h3>
+                <p>초기 버전에서는 최대 80페이지 크기의 파일만 첨부할 수 있습니다.</p>
               </div>
             </div>
             <div className="col-md-6">
@@ -266,17 +266,17 @@ function Home() {
         <div className="container">
           <div className="row">
             <div className="col-md-12 text-center">
-              <h2 className="section-title">Get Early Access</h2>
+              <h2 className="section-title" style={{marginTop: '30px'}}>Get Early Access</h2>
               {/* <p className="section-subtitle">Be among the first to experience GodNote</p> */}
             </div>
           </div>
           <div className="row">
-            <div className="col-md-8 col-md-offset-2">
+            <div className="col-sm-10 col-sm-offset-1 col-md-8 col-md-offset-2">
               <center>
                 <p>이메일을 남겨주시면 서비스가 런칭되었을 때 알림을 드리겠습니다.</p>
                 <input id="submit-email" type="email" placeholder="알림을 받으실 이메일" /> <br /><br />
                 <textarea id="submit-advice" name="Text1" cols="40" rows="5" placeholder="서비스에 대한 조언을 남겨주세요"></textarea><br />
-                <button style={{ width: '350px' }} id="submit" disabled={isLoading}>
+                <button id="submit" disabled={isLoading}>
                   {isLoading ? (
                     <span className="loading-spinner"></span>
                   ) : (
