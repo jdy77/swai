@@ -79,7 +79,7 @@ function Home() {
         id: getUVfromCookie(),
         landingUrl: window.location.href,
         ip: ip,
-        referer: document.referrer,
+        referer: window.document.referrer || '',
         time_stamp: getTimeStamp(),
         utm: new URLSearchParams(window.location.search).get("utm"),
         device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
