@@ -6,6 +6,7 @@ function Home() {
   const isSubmitting = useRef(false);
   const [showPopup, setShowPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const referrer = useRef(document.referrer);  // 컴포넌트 마운트 전에 referrer 저장
 
   useEffect(() => {
     // IP 주소를 가져오는 Promise 함수
@@ -79,7 +80,7 @@ function Home() {
         id: getUVfromCookie(),
         landingUrl: window.location.href,
         ip: ip,
-        referer: document.referrer,
+        referer: referrer.current,  // 저장된 referrer 사용
         time_stamp: getTimeStamp(),
         utm: new URLSearchParams(window.location.search).get("utm"),
         device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
