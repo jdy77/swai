@@ -746,3 +746,27 @@ font-size: 18px;
   padding-right: 0 !important;
   padding-left: 0 !important;
 }
+
+.hero-header h3 {
+    font-size: 20px !important;
+    font-weight: bold !important;
+    margin: 0 0 10px 0 !important;
+}
+
+@media (min-width: 768px) {
+    .hero-header h3 {
+        font-size: 28px !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .hero-header h3 {
+        font-size: 32px !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    .hero-header h3 {
+        font-size: 36px !important;
+    }
+}
