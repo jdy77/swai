@@ -6,26 +6,8 @@ function Home() {
   const isSubmitting = useRef(false);
   const [showPopup, setShowPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const referrer = useRef(document.referrer);  // 컴포넌트 마운트 전에 referrer 저장
 
   useEffect(() => {
-    // IP 주소를 가져오는 Promise 함수
-    const getIPAddress = () => {
-      return new Promise((resolve) => {
-        window.getIP = function(json) {
-          try {
-            resolve(json.ip);
-          } catch (e) {
-            resolve('unknown');
-          }
-        };
-        
-        const script = document.createElement('script');
-        script.src = 'https://jsonip.com?format=jsonp&callback=getIP';
-        document.body.appendChild(script);
-      });
-    };
-
     // 쿠키에서 값을 가져오는 함수
     function getCookieValue(name) {
       const value = "; " + document.cookie;
@@ -56,58 +38,6 @@ function Home() {
         return existingHash;
       }
     }
-
-    function padValue(value) {
-      return (value < 10) ? "0" + value : value;
-    }
-
-    function getTimeStamp() {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const seconds = date.getSeconds();
-      return `${padValue(year)}-${padValue(month)}-${padValue(day)} ${padValue(hours)}:${padValue(minutes)}:${padValue(seconds)}`;
-    }
-
-    // 방문자 데이터 전송 함수
-    const sendVisitorData = async () => {
-      const ip = await getIPAddress();
-      
-      const dataObj = {
-        id: getUVfromCookie(),
-        landingUrl: window.location.href,
-        ip: ip,
-        referer: referrer.current,  // 저장된 referrer 사용
-        time_stamp: getTimeStamp(),
-        utm: new URLSearchParams(window.location.search).get("utm"),
-        device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-      };
-      console.log('방문자 데이터:', dataObj); // 데이터 로깅
-
-      const addrScript = 'https://script.google.com/macros/s/AKfycbwGfbAmUgQ9aka1OMPPGoITHAP34bGuYfQkiBWVi1-EpZdl_5or03LF9K99IfB9SWeI/exec';
-
-      $.ajax({
-        url: addrScript,
-        dataType: 'jsonp',
-        data: {
-          action: 'insert',
-          table: 'visitors',
-          data: JSON.stringify(dataObj)
-        },
-        success: function(response) {
-          console.log('서버 응답:', response);
-        },
-        error: function(err) {
-          console.error('에러:', err);
-        }
-      });
-    };
-
-    // 방문자 데이터 전송 실행
-    sendVisitorData();
 
     // 이메일 제출 이벤트 핸들러
     const handleSubmit = function() {
