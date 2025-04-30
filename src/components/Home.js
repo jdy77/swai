@@ -168,9 +168,7 @@ function Home() {
         <div className="row hero-header" id="home">
           <div className="col-md-12 text-center">
             <img src="/img/godnote-logo.png" className="logo" alt="logo" />
-            {/* <h1>GodNote</h1> */}
-            <h3>Your Personal Note Taking Assistant</h3>
-            <h4>Coming Soon</h4>
+            <h3 style={{fontSize: '20px', fontWeight: 'bold'}}>A Better Way to Take Notes</h3>
             <a href="#registration" className="btn btn-lg btn-red">Get Started <span className="ti-arrow-right"></span></a>
           </div>
         </div>
