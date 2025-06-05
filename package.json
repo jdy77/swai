@@ -10,11 +10,18 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.5",
+    "docx": "^9.5.0",
+    "html2canvas": "^1.4.1",
     "jquery": "^3.7.1",
+    "jspdf": "^3.0.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.2.133",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.5.2",
     "react-scripts": "5.0.1",
+    "remark-gfm": "^4.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import Home from './components/Home';
+import Demo from './components/Demo';
+import MVT from './components/MVT';
 import axios from 'axios';
 
 function App() {
@@ -112,7 +113,9 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Demo />} />
+          <Route path="/about" element={<MVT />} />
+          <Route path="/demo" element={<Demo />} />
           {/* 여기에 새로운 라우트를 추가할 수 있습니다 */}
           {/* 예: <Route path="/about" element={<About />} /> */}
         </Routes>
