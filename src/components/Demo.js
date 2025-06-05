@@ -581,16 +581,19 @@ function Demo() {
           const isEmpty = !textContent.trim() || textContent.trim() === '제목을 입력하세요' || textContent.trim() === '인용문을 입력하세요' || textContent.trim() === '코드를 입력하세요';
           
           if (isEmpty) {
-            // 빈 서식 요소면 일반 p 태그로 변경
+            // 빈 서식 요소면 일반 p 태그로 변경하되 줄 위치 유지
             e.preventDefault();
             
             const newP = document.createElement('p');
             newP.style.margin = '0';
             newP.style.lineHeight = '1.6';
             
+            // 줄의 위치를 유지하기 위해 <br> 태그 추가
+            newP.innerHTML = '<br>';
+            
             currentElement.replaceWith(newP);
             
-            // 커서를 새 p 태그로 이동
+            // 커서를 새 p 태그의 시작으로 이동
             const newRange = document.createRange();
             newRange.setStart(newP, 0);
             newRange.collapse(true);
