@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import axios from 'axios';
 
 function Demo() {
   const [pdfFile, setPdfFile] = useState(null);
@@ -17,11 +18,104 @@ function Demo() {
   const [isPreviewMode, setIsPreviewMode] = useState(false); // 편집/프리뷰 모드 토글
   const [leftWidth, setLeftWidth] = useState(50); // 왼쪽 패널 너비 (%)
   const [isResizing, setIsResizing] = useState(false); // 리사이징 상태
+  
+  // 팝업 관련 상태 추가
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [showThankYouPopup, setShowThankYouPopup] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackEmail, setFeedbackEmail] = useState('');
+  const [feedbackAdvice, setFeedbackAdvice] = useState('');
+  const [wantUse, setWantUse] = useState(''); // 사용 의향 상태 추가
+  
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
   const pdfContainerRef = useRef(null);
   const containerRef = useRef(null); // 전체 컨테이너 참조
+  const isSubmitting = useRef(false);
   const [forceUpdate, setForceUpdate] = useState(0); // 강제 업데이트용 state 추가
+
+  // 쿠키 관련 함수들 (MVT.js에서 가져옴)
+  const getCookieValue = (name) => {
+    const value = "; " + document.cookie;
+    const parts = value.split("; " + name + "=");
+    if (parts.length === 2) {
+      return parts.pop().split(";").shift();
+    }
+  };
+
+  const setCookieValue = (name, value, days) => {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+  };
+
+  const getUVfromCookie = () => {
+    const hash = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const existingHash = getCookieValue("user");
+    if (!existingHash) {
+      setCookieValue("user", hash, 180);
+      return hash;
+    } else {
+      return existingHash;
+    }
+  };
+
+  // 피드백 제출 핸들러
+  const handleFeedbackSubmit = async () => {
+    if (isSubmitting.current || isSubmittingFeedback) return;
+    
+    isSubmitting.current = true;
+    setIsSubmittingFeedback(true);
+
+    const validateEmail = (email) => {
+      const re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
+      return re.test(email);
+    };
+    
+    if (feedbackEmail === '' || !validateEmail(feedbackEmail)) {
+      alert("이메일이 유효하지 않아 알림을 드릴 수가 없습니다.");
+      isSubmitting.current = false;
+      setIsSubmittingFeedback(false);
+      return;
+    }
+    
+    if (wantUse === '') {
+      alert("사용 의향에 대한 답변을 선택해주세요.");
+      isSubmitting.current = false;
+      setIsSubmittingFeedback(false);
+      return;
+    }
+    
+    const finalData = JSON.stringify({
+      id: getUVfromCookie(),
+      email: feedbackEmail,
+      wantUse: wantUse,
+      advice: feedbackAdvice
+    });
+    
+    try {
+      const response = await axios.get(
+        'https://script.google.com/macros/s/AKfycbwGfbAmUgQ9aka1OMPPGoITHAP34bGuYfQkiBWVi1-EpZdl_5or03LF9K99IfB9SWeI/exec?action=insert&table=tab_final&data=' + finalData
+      );
+      
+      console.log(response.data.data);
+      setFeedbackEmail('');
+      setFeedbackAdvice('');
+      setWantUse('');
+      setShowFeedbackPopup(false);
+      setShowThankYouPopup(true);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmittingFeedback(false);
+      isSubmitting.current = false;
+    }
+  };
 
   // 현재 페이지의 노트 내용
   const currentNote = noteData[currentPage] || '';
@@ -528,7 +622,7 @@ function Demo() {
           } else {
             // 내용이 있는 불릿이면 Enter 후에 새 불릿 추가 (확실한 띄어쓰기 보장)
             const indent = bulletMatch[1].match(/^\s*/)[0]; // 들여쓰기만 추출
-            const bulletText = `${indent}•\u00A0`; // 들여쓰기 + bullet + non-breaking space
+            const bulletText = `${indent}•&nbsp;`; // 들여쓰기 + bullet + non-breaking space
             
             setTimeout(() => {
               try {
@@ -917,451 +1011,859 @@ function Demo() {
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden' }}>
-      {pdfPages.length === 0 ? (
-        // 파일 업로드 화면
-        <div style={{ 
-          height: '100vh', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          flexDirection: 'column',
-          backgroundColor: '#f8f9fa'
+      {/* 헤더 추가 - 높이를 45px로 축소 */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '45px',
+        backgroundColor: '#4169E1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        zIndex: 1000,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <h1 style={{ 
+          color: 'white', 
+          margin: 0, 
+          fontSize: '20px',
+          fontWeight: 'bold'
         }}>
-          <div
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            style={{
-              border: '2px dashed #dee2e6',
-              borderRadius: '10px',
-              padding: '60px',
-              textAlign: 'center',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-              minWidth: '400px',
-              maxWidth: '600px'
-            }}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <h2 style={{ color: '#6c757d', marginBottom: '20px' }}>PDF 파일 업로드</h2>
-            <p style={{ color: '#868e96', fontSize: '16px' }}>
-              파일을 여기로 드래그하거나 클릭해서 선택하세요
-            </p>
-            <p style={{ color: '#868e96', fontSize: '14px' }}>
-              PDF 파일을 페이지별로 분할하여 표시합니다
-            </p>
-            
-            {isLoading && (
-              <div style={{ marginTop: '20px' }}>
-                <div className="spinner-border text-primary" role="status">
-                  <span className="sr-only">로딩 중...</span>
+          GodNote
+        </h1>
+        
+        <button
+          onClick={() => setShowFeedbackPopup(true)}
+          style={{
+            backgroundColor: 'white',
+            color: '#4169E1',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '5px',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.backgroundColor = '#f0f0f0';
+            e.target.style.transform = 'translateY(-1px)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.backgroundColor = 'white';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          사용자 경험을 공유해주세요!
+        </button>
+      </div>
+
+      {/* 메인 컨텐츠 영역 - 헤더 높이에 맞춰 조정 */}
+      <div style={{ marginTop: '45px', height: 'calc(100vh - 45px)' }}>
+        {pdfPages.length === 0 ? (
+          // 파일 업로드 화면
+          <div style={{ 
+            height: '100%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexDirection: 'column',
+            backgroundColor: '#f8f9fa'
+          }}>
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              style={{
+                border: '2px dashed #dee2e6',
+                borderRadius: '10px',
+                padding: '60px',
+                textAlign: 'center',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                minWidth: '400px',
+                maxWidth: '600px'
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <h2 style={{ color: '#6c757d', marginBottom: '20px' }}>PDF 파일 업로드</h2>
+              <p style={{ color: '#868e96', fontSize: '16px' }}>
+                파일을 여기로 드래그하거나 클릭해서 선택하세요
+              </p>
+              <p style={{ color: '#868e96', fontSize: '14px' }}>
+                PDF 파일을 페이지별로 분할하여 표시합니다
+              </p>
+              
+              {isLoading && (
+                <div style={{ marginTop: '20px' }}>
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="sr-only">로딩 중...</span>
+                  </div>
+                  <p style={{ marginTop: '10px', color: '#6c757d' }}>PDF를 페이지별로 분할 중입니다...</p>
                 </div>
-                <p style={{ marginTop: '10px', color: '#6c757d' }}>PDF를 페이지별로 분할 중입니다...</p>
-              </div>
-            )}
-            
-            {error && (
-              <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px' }}>
-                <p style={{ margin: 0, fontSize: '14px' }}>{error}</p>
-                <button 
-                  onClick={() => setError('')}
-                  style={{ marginTop: '10px', padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
-                >
-                  닫기
-                </button>
-              </div>
-            )}
-          </div>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
-          
-          <p style={{ marginTop: '20px', color: '#6c757d', fontSize: '12px' }}>
-            키보드 단축키: ← → (또는 ↑ ↓) 페이지 이동
-          </p>
-        </div>
-      ) : (
-        // PDF 뷰어 화면
-        <div ref={containerRef} style={{ display: 'flex', height: '100vh' }}>
-          {/* PDF 페이지 영역 */}
-          <div 
-            ref={pdfContainerRef}
-            style={{ 
-              width: `${leftWidth}%`,
-              padding: '20px', 
-              backgroundColor: '#f8f9fa',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
-          >
-            {/* 페이지 네비게이션 */}
-            <div style={{ 
-              marginBottom: '20px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              gap: '15px', 
-              flexWrap: 'wrap',
-              backgroundColor: 'white',
-              padding: '15px',
-              borderRadius: '8px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <button 
-                onClick={prevPage} 
-                disabled={currentPage === 0}
-                className="btn btn-outline-primary"
-                style={{ minWidth: '80px' }}
-              >
-                ← 이전
-              </button>
+              )}
               
-              <select 
-                value={currentPage} 
-                onChange={(e) => goToPage(parseInt(e.target.value))}
-                className="form-select"
-                style={{ width: 'auto', minWidth: '120px' }}
-              >
-                {pdfPages.map((_, index) => (
-                  <option key={index} value={index}>
-                    페이지 {index + 1}
-                  </option>
-                ))}
-              </select>
-              
-              <span style={{ fontSize: '16px', fontWeight: '500' }}>
-                / {pdfPages.length}
-              </span>
-              
-              <button 
-                onClick={nextPage} 
-                disabled={currentPage >= pdfPages.length - 1}
-                className="btn btn-outline-primary"
-                style={{ minWidth: '80px' }}
-              >
-                다음 →
-              </button>
-
-              {/* 뷰 모드 선택 */}
-              <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '14px', color: '#6c757d' }}>표시 모드:</span>
-                <select 
-                  value={viewMode} 
-                  onChange={(e) => setViewMode(e.target.value)}
-                  className="form-select"
-                  style={{ width: 'auto', fontSize: '14px' }}
-                >
-                  <option value="center">페이지 맞춤</option>
-                  <option value="fit">전체 맞춤</option>
-                  <option value="fill">세로 맞춤</option>
-                </select>
-              </div>
-
-              {/* 페이지 크기 정보 */}
-              <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                크기: {Math.round(pageSize.width)} × {Math.round(pageSize.height)} pt
-              </div>
+              {error && (
+                <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px' }}>
+                  <p style={{ margin: 0, fontSize: '14px' }}>{error}</p>
+                  <button 
+                    onClick={() => setError('')}
+                    style={{ marginTop: '10px', padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
+                  >
+                    닫기
+                  </button>
+                </div>
+              )}
             </div>
             
-            {/* 분할된 PDF 페이지 뷰어 */}
-            {pdfPages[currentPage] && (
-              <div style={{ 
-                flex: 1,
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            
+            <p style={{ marginTop: '20px', color: '#6c757d', fontSize: '12px' }}>
+              키보드 단축키: ← → (또는 ↑ ↓) 페이지 이동
+            </p>
+          </div>
+        ) : (
+          // PDF 뷰어 화면
+          <div ref={containerRef} style={{ display: 'flex', height: '100%' }}>
+            {/* PDF 페이지 영역 */}
+            <div 
+              ref={pdfContainerRef}
+              style={{ 
+                width: `${leftWidth}%`,
+                padding: '20px', 
+                backgroundColor: '#f8f9fa',
                 display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+            >
+              {/* 페이지 네비게이션 */}
+              <div style={{ 
+                marginBottom: '20px', 
+                display: 'flex', 
+                alignItems: 'center', 
                 justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: '#ffffff',
+                gap: '15px', 
+                flexWrap: 'wrap',
+                backgroundColor: 'white',
+                padding: '15px',
                 borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                overflow: 'hidden',
-                position: 'relative',
-                padding: '20px'
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>
-                {viewMode === 'center' ? (
-                  <div style={{
-                    width: viewerSize.width,
-                    height: viewerSize.height,
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                    overflow: 'hidden'
-                  }}>
+                <button 
+                  onClick={prevPage} 
+                  disabled={currentPage === 0}
+                  className="btn btn-outline-primary"
+                  style={{ minWidth: '80px' }}
+                >
+                  ← 이전
+                </button>
+                
+                <select 
+                  value={currentPage} 
+                  onChange={(e) => goToPage(parseInt(e.target.value))}
+                  className="form-select"
+                  style={{ width: 'auto', minWidth: '120px' }}
+                >
+                  {pdfPages.map((_, index) => (
+                    <option key={index} value={index}>
+                      페이지 {index + 1}
+                    </option>
+                  ))}
+                </select>
+                
+                <span style={{ fontSize: '16px', fontWeight: '500' }}>
+                  / {pdfPages.length}
+                </span>
+                
+                <button 
+                  onClick={nextPage} 
+                  disabled={currentPage >= pdfPages.length - 1}
+                  className="btn btn-outline-primary"
+                  style={{ minWidth: '80px' }}
+                >
+                  다음 →
+                </button>
+
+                {/* 뷰 모드 선택 */}
+                <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px', color: '#6c757d' }}>표시 모드:</span>
+                  <select 
+                    value={viewMode} 
+                    onChange={(e) => setViewMode(e.target.value)}
+                    className="form-select"
+                    style={{ width: 'auto', fontSize: '14px' }}
+                  >
+                    <option value="center">페이지 맞춤</option>
+                    <option value="fit">전체 맞춤</option>
+                    <option value="fill">세로 맞춤</option>
+                  </select>
+                </div>
+
+                {/* 페이지 크기 정보 */}
+                <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                  크기: {Math.round(pageSize.width)} × {Math.round(pageSize.height)} pt
+                </div>
+              </div>
+              
+              {/* 분할된 PDF 페이지 뷰어 */}
+              {pdfPages[currentPage] && (
+                <div style={{ 
+                  flex: 1,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  padding: '20px'
+                }}>
+                  {viewMode === 'center' ? (
+                    <div style={{
+                      width: viewerSize.width,
+                      height: viewerSize.height,
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      overflow: 'hidden'
+                    }}>
+                      <iframe
+                        key={`page-${currentPage}-${viewMode}`}
+                        src={getPdfViewUrl()}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          border: 'none'
+                        }}
+                        title={`페이지 ${currentPage + 1}`}
+                      />
+                    </div>
+                  ) : (
                     <iframe
                       key={`page-${currentPage}-${viewMode}`}
                       src={getPdfViewUrl()}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none'
+                        width: 'calc(100% - 40px)',
+                        height: 'calc(100% - 40px)',
+                        border: 'none',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.1)'
                       }}
                       title={`페이지 ${currentPage + 1}`}
                     />
+                  )}
+                  
+                  {/* 페이지 정보 오버레이 */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '35px',
+                    right: '35px',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    color: 'white',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 10
+                  }}>
+                    {currentPage + 1} / {pdfPages.length}
                   </div>
-                ) : (
-                  <iframe
-                    key={`page-${currentPage}-${viewMode}`}
-                    src={getPdfViewUrl()}
-                    style={{
-                      width: 'calc(100% - 40px)',
-                      height: 'calc(100% - 40px)',
-                      border: 'none',
-                      borderRadius: '4px',
-                      boxShadow: '0 2px 12px rgba(0,0,0,0.1)'
-                    }}
-                    title={`페이지 ${currentPage + 1}`}
-                  />
-                )}
-                
-                {/* 페이지 정보 오버레이 */}
+                </div>
+              )}
+            </div>
+            
+            {/* 리사이저 */}
+            <div
+              onMouseDown={handleMouseDown}
+              style={{
+                width: '4px',
+                backgroundColor: '#dee2e6',
+                cursor: 'col-resize',
+                position: 'relative',
+                zIndex: 10,
+                borderLeft: '1px solid #adb5bd',
+                borderRight: '1px solid #adb5bd',
+                transition: isResizing ? 'none' : 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!isResizing) {
+                  e.target.style.backgroundColor = '#6c757d';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isResizing) {
+                  e.target.style.backgroundColor = '#dee2e6';
+                }
+              }}
+            >
+              {/* 리사이저 핸들 표시 */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '20px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(108, 117, 125, 0.8)',
+                borderRadius: '10px',
+                opacity: isResizing ? 1 : 0,
+                transition: 'opacity 0.2s'
+              }}>
                 <div style={{
-                  position: 'absolute',
-                  top: '35px',
-                  right: '35px',
-                  backgroundColor: 'rgba(0,0,0,0.8)',
-                  color: 'white',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  backdropFilter: 'blur(4px)',
-                  zIndex: 10
-                }}>
-                  {currentPage + 1} / {pdfPages.length}
+                  width: '2px',
+                  height: '20px',
+                  backgroundColor: 'white',
+                  marginRight: '2px'
+                }}></div>
+                <div style={{
+                  width: '2px',
+                  height: '20px',
+                  backgroundColor: 'white'
+                }}></div>
+              </div>
+            </div>
+            
+            {/* 리치 텍스트 에디터 영역 */}
+            <div style={{ 
+              width: `${100 - leftWidth}%`,
+              padding: '20px',
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}>
+              {/* 에디터 헤더 */}
+              <div style={{ 
+                marginBottom: '20px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                flexWrap: 'wrap', 
+                gap: '10px',
+                backgroundColor: '#f8f9fa',
+                padding: '15px',
+                borderRadius: '8px'
+              }}>
+                <h4 style={{ margin: 0, fontSize: '18px', color: '#495057' }}>
+                  노트 - 페이지 {currentPage + 1}
+                  {noteData[currentPage] && 
+                    <span style={{ color: '#28a745', fontSize: '12px', marginLeft: '8px' }}>
+                      ✓ 저장됨
+                    </span>
+                  }
+                </h4>
+                
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => {
+                      if (editorRef.current) {
+                        editorRef.current.innerHTML = '';
+                        setNoteData(prev => ({ ...prev, [currentPage]: '' }));
+                      }
+                    }}
+                    className="btn btn-outline-danger btn-sm"
+                  >
+                    지우기
+                  </button>
+                  
+                  {/* PDF 내보내기 버튼 */}
+                  <button 
+                    onClick={exportToPdf}
+                    disabled={Object.keys(noteData).length === 0}
+                    className="btn btn-outline-success btn-sm"
+                    title="필기 내용을 PDF로 내보내기"
+                  >
+                    📄 PDF 저장
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      pdfPages.forEach(page => {
+                        if (page.url) {
+                          URL.revokeObjectURL(page.url);
+                        }
+                      });
+                      setPdfFile(null);
+                      setPdfPages([]);
+                      setNoteData({});
+                      setCurrentPage(0);
+                      setPageSize({ width: 595, height: 842 });
+                    }}
+                    className="btn btn-outline-secondary btn-sm"
+                  >
+                    새 파일
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
-          
-          {/* 리사이저 */}
-          <div
-            onMouseDown={handleMouseDown}
-            style={{
-              width: '4px',
-              backgroundColor: '#dee2e6',
-              cursor: 'col-resize',
-              position: 'relative',
-              zIndex: 10,
-              borderLeft: '1px solid #adb5bd',
-              borderRight: '1px solid #adb5bd',
-              transition: isResizing ? 'none' : 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              if (!isResizing) {
-                e.target.style.backgroundColor = '#6c757d';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isResizing) {
-                e.target.style.backgroundColor = '#dee2e6';
-              }
-            }}
-          >
-            {/* 리사이저 핸들 표시 */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '20px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(108, 117, 125, 0.8)',
-              borderRadius: '10px',
-              opacity: isResizing ? 1 : 0,
-              transition: 'opacity 0.2s'
-            }}>
+
+              {/* 서식 툴바 */}
               <div style={{
-                width: '2px',
-                height: '20px',
-                backgroundColor: 'white',
-                marginRight: '2px'
-              }}></div>
-              <div style={{
-                width: '2px',
-                height: '20px',
-                backgroundColor: 'white'
-              }}></div>
-            </div>
-          </div>
-          
-          {/* 리치 텍스트 에디터 영역 */}
-          <div style={{ 
-            width: `${100 - leftWidth}%`,
-            padding: '20px',
-            backgroundColor: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
-            {/* 에디터 헤더 */}
-            <div style={{ 
-              marginBottom: '20px', 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
-              gap: '10px',
-              backgroundColor: '#f8f9fa',
-              padding: '15px',
-              borderRadius: '8px'
-            }}>
-              <h4 style={{ margin: 0, fontSize: '18px', color: '#495057' }}>
-                노트 - 페이지 {currentPage + 1}
-                {noteData[currentPage] && 
-                  <span style={{ color: '#28a745', fontSize: '12px', marginLeft: '8px' }}>
-                    ✓ 저장됨
-                  </span>
-                }
-              </h4>
-              
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                marginBottom: '15px',
+                display: 'flex',
+                gap: '8px',
+                flexWrap: 'wrap',
+                padding: '12px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px',
+                border: '1px solid #dee2e6'
+              }}>
                 <button 
-                  onClick={() => {
-                    if (editorRef.current) {
-                      editorRef.current.innerHTML = '';
-                      setNoteData(prev => ({ ...prev, [currentPage]: '' }));
-                    }
-                  }}
-                  className="btn btn-outline-danger btn-sm"
-                >
-                  지우기
-                </button>
-                
-                {/* PDF 내보내기 버튼 */}
-                <button 
-                  onClick={exportToPdf}
-                  disabled={Object.keys(noteData).length === 0}
-                  className="btn btn-outline-success btn-sm"
-                  title="필기 내용을 PDF로 내보내기"
-                >
-                  📄 PDF 저장
-                </button>
-                
-                <button 
-                  onClick={() => {
-                    pdfPages.forEach(page => {
-                      if (page.url) {
-                        URL.revokeObjectURL(page.url);
-                      }
-                    });
-                    setPdfFile(null);
-                    setPdfPages([]);
-                    setNoteData({});
-                    setCurrentPage(0);
-                    setPageSize({ width: 595, height: 842 });
-                  }}
+                  onClick={() => applyFormat('bold')}
                   className="btn btn-outline-secondary btn-sm"
+                  title="굵게 (Ctrl+B)"
                 >
-                  새 파일
+                  <strong>B</strong>
+                </button>
+                <button 
+                  onClick={() => applyFormat('italic')}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="기울임 (Ctrl+I)"
+                >
+                  <em>I</em>
+                </button>
+                <button 
+                  onClick={() => applyFormat('underline')}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="밑줄 (Ctrl+U)"
+                >
+                  <u>U</u>
+                </button>
+                <div style={{ width: '1px', backgroundColor: '#dee2e6', margin: '0 4px' }}></div>
+                <button 
+                  onClick={() => insertHeading(1)}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="제목 1"
+                >
+                  H1
+                </button>
+                <button 
+                  onClick={() => insertHeading(2)}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="제목 2"
+                >
+                  H2
+                </button>
+                <button 
+                  onClick={() => insertHeading(3)}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="제목 3"
+                >
+                  H3
+                </button>
+                <div style={{ width: '1px', backgroundColor: '#dee2e6', margin: '0 4px' }}></div>
+                <button 
+                  onClick={insertCodeBlock}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="코드 블록"
+                >
+                  {'</>'}
+                </button>
+                <button 
+                  onClick={insertQuote}
+                  className="btn btn-outline-secondary btn-sm"
+                  title="인용문"
+                >
+                  " 인용
                 </button>
               </div>
+              
+              {/* 리치 텍스트 에디터 */}
+              <div
+                ref={editorRef}
+                contentEditable
+                onInput={handleEditorChange}
+                onKeyDown={handleKeyDown}
+                style={{
+                  flex: 1,
+                  padding: '20px',
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  outline: 'none',
+                  overflow: 'auto',
+                  fontFamily: '"Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+                  textAlign: 'left'
+                }}
+                suppressContentEditableWarning={true}
+              />
+              
+              <div style={{ 
+                marginTop: '15px', 
+                fontSize: '12px', 
+                color: '#6c757d',
+                textAlign: 'center',
+                backgroundColor: '#f8f9fa',
+                padding: '10px',
+                borderRadius: '4px'
+              }}>
+                💡 <strong>자동 변환:</strong> 줄 시작에 * 또는 - (불릿), {'->'} (화살표), ... (점선) 등 | 
+                <strong>단축키:</strong> Ctrl+B/I/U (서식), ← → (페이지 이동)
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 피드백 팝업 */}
+      {showFeedbackPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '12px',
+            maxWidth: '580px',  // 500px에서 580px로 증가
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowFeedbackPopup(false)}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#6c757d',
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              ×
+            </button>
+            
+            <h2 style={{ 
+              marginBottom: '20px', 
+              color: '#2c3e50',
+              textAlign: 'center',
+              fontSize: '24px'
+            }}>
+              사용자 경험 공유하기
+            </h2>
+            
+            <p style={{ 
+              marginBottom: '25px', 
+              color: '#6c757d',
+              textAlign: 'center',
+              fontSize: '16px'
+            }}>
+              GodNote 사용 경험을 공유해주세요!<br/>
+              더 나은 서비스를 만드는데 큰 도움이 됩니다.
+            </p>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: 'bold',
+                color: '#495057',
+                fontSize: '16px'
+              }}>
+                이메일 주소
+                <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>
+              </label>
+              <input
+                type="email"
+                value={feedbackEmail}
+                onChange={(e) => setFeedbackEmail(e.target.value)}
+                placeholder="연락 가능한 이메일을 입력해주세요"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #e9ecef',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#4169E1'}
+                onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+              />
             </div>
 
-            {/* 서식 툴바 */}
-            <div style={{
-              marginBottom: '15px',
-              display: 'flex',
-              gap: '8px',
-              flexWrap: 'wrap',
-              padding: '12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              border: '1px solid #dee2e6'
-            }}>
-              <button 
-                onClick={() => applyFormat('bold')}
-                className="btn btn-outline-secondary btn-sm"
-                title="굵게 (Ctrl+B)"
-              >
-                <strong>B</strong>
-              </button>
-              <button 
-                onClick={() => applyFormat('italic')}
-                className="btn btn-outline-secondary btn-sm"
-                title="기울임 (Ctrl+I)"
-              >
-                <em>I</em>
-              </button>
-              <button 
-                onClick={() => applyFormat('underline')}
-                className="btn btn-outline-secondary btn-sm"
-                title="밑줄 (Ctrl+U)"
-              >
-                <u>U</u>
-              </button>
-              <div style={{ width: '1px', backgroundColor: '#dee2e6', margin: '0 4px' }}></div>
-              <button 
-                onClick={() => insertHeading(1)}
-                className="btn btn-outline-secondary btn-sm"
-                title="제목 1"
-              >
-                H1
-              </button>
-              <button 
-                onClick={() => insertHeading(2)}
-                className="btn btn-outline-secondary btn-sm"
-                title="제목 2"
-              >
-                H2
-              </button>
-              <button 
-                onClick={() => insertHeading(3)}
-                className="btn btn-outline-secondary btn-sm"
-                title="제목 3"
-              >
-                H3
-              </button>
-              <div style={{ width: '1px', backgroundColor: '#dee2e6', margin: '0 4px' }}></div>
-              <button 
-                onClick={insertCodeBlock}
-                className="btn btn-outline-secondary btn-sm"
-                title="코드 블록"
-              >
-                {'</>'}
-              </button>
-              <button 
-                onClick={insertQuote}
-                className="btn btn-outline-secondary btn-sm"
-                title="인용문"
-              >
-                " 인용
-              </button>
+            {/* 사용 의향 질문 추가 */}
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '15px', 
+                fontWeight: 'bold',
+                color: '#495057',
+                fontSize: '16px'
+              }}>
+                해당 서비스를 정식 출시할 경우 사용하실 의향이 있으신가요? 
+                <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>
+              </label>
+              
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: '30px',
+                flexWrap: 'wrap'
+              }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  color: '#495057'
+                }}>
+                  <input
+                    type="radio"
+                    name="wantUse"
+                    value="yes"
+                    checked={wantUse === 'yes'}
+                    onChange={(e) => setWantUse(e.target.value)}
+                    style={{
+                      marginRight: '8px',
+                      width: '16px',
+                      height: '16px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  네, 사용하고 싶습니다
+                </label>
+                
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  color: '#495057'
+                }}>
+                  <input
+                    type="radio"
+                    name="wantUse"
+                    value="no"
+                    checked={wantUse === 'no'}
+                    onChange={(e) => setWantUse(e.target.value)}
+                    style={{
+                      marginRight: '8px',
+                      width: '16px',
+                      height: '16px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  아니요, 사용하지 않겠습니다
+                </label>
+              </div>
             </div>
             
-            {/* 리치 텍스트 에디터 */}
-            <div
-              ref={editorRef}
-              contentEditable
-              onInput={handleEditorChange}
-              onKeyDown={handleKeyDown}
-              style={{
-                flex: 1,
-                padding: '20px',
-                backgroundColor: '#fafafa',
-                border: '1px solid #dee2e6',
-                borderRadius: '8px',
-                fontSize: '14px',
-                lineHeight: '1.6',
-                outline: 'none',
-                overflow: 'auto',
-                fontFamily: '"Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-                textAlign: 'left'
-              }}
-              suppressContentEditableWarning={true}
-            />
+            <div style={{ marginBottom: '30px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: 'bold',
+                color: '#495057',
+                fontSize: '16px'
+              }}>
+                사용 경험 및 의견
+              </label>
+              <textarea
+                value={feedbackAdvice}
+                onChange={(e) => setFeedbackAdvice(e.target.value)}
+                placeholder="GodNote를 사용해보신 경험이나 개선사항, 의견 등을 자유롭게 작성해주세요"
+                rows="6"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #e9ecef',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  resize: 'vertical',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box',
+                  lineHeight: '1.5'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#4169E1'}
+                onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+              />
+            </div>
             
-            {/* placeholder 효과를 위한 CSS */}
-            <style>
-              {`
-                [contenteditable]:empty::before {
-                  content: "여기에 노트를 작성하세요...
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowFeedbackPopup(false)}
+                style={{
+                  padding: '12px 24px',
+                  border: '2px solid #6c757d',
+                  backgroundColor: 'transparent',
+                  color: '#6c757d',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#6c757d';
+                  e.target.style.color = 'white';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#6c757d';
+                }}
+              >
+                취소
+              </button>
+              
+              <button
+                onClick={handleFeedbackSubmit}
+                disabled={isSubmittingFeedback || !feedbackEmail.trim() || !wantUse}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  backgroundColor: isSubmittingFeedback || !feedbackEmail.trim() || !wantUse ? '#ccc' : '#4169E1',
+                  color: 'white',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: isSubmittingFeedback || !feedbackEmail.trim() || !wantUse ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isSubmittingFeedback ? (
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    제출 중...
+                  </>
+                ) : (
+                  '의견 제출하기'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 감사 메시지 팝업 */}
+      {showThankYouPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '12px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '20px'
+            }}>
+              🙏
+            </div>
+            
+            <h2 style={{ 
+              marginBottom: '15px', 
+              color: '#2c3e50',
+              fontSize: '24px'
+            }}>
+              감사합니다!
+            </h2>
+            
+            <p style={{ 
+              marginBottom: '30px', 
+              color: '#6c757d',
+              fontSize: '16px',
+              lineHeight: '1.5'
+            }}>
+              소중한 의견을 주셔서 감사합니다.
+            </p>
+            
+            <button
+              onClick={() => setShowThankYouPopup(false)}
+              style={{
+                padding: '12px 30px',
+                border: 'none',
+                backgroundColor: '#4169E1',
+                color: 'white',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#365abd'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#4169E1'}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 스피너 애니메이션 CSS */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          [contenteditable]:empty::before {
+            content: "여기에 노트를 작성하세요...
 
 자동 변환 예시:
 • * 또는 - 입력 후 스페이스 → 불릿 포인트
@@ -1373,28 +1875,12 @@ function Demo() {
 • Ctrl+B → 굵게
 • Ctrl+I → 기울임
 • Ctrl+U → 밑줄";
-                  color: #999;
-                  font-style: italic;
-                  white-space: pre-line;
-                }
-              `}
-            </style>
-            
-            <div style={{ 
-              marginTop: '15px', 
-              fontSize: '12px', 
-              color: '#6c757d',
-              textAlign: 'center',
-              backgroundColor: '#f8f9fa',
-              padding: '10px',
-              borderRadius: '4px'
-            }}>
-              💡 <strong>자동 변환:</strong> 줄 시작에 * 또는 - (불릿), {'->'} (화살표), ... (점선) 등 | 
-              <strong>단축키:</strong> Ctrl+B/I/U (서식), ← → (페이지 이동)
-            </div>
-          </div>
-        </div>
-      )}
+            color: #999;
+            font-style: italic;
+            white-space: pre-line;
+          }
+        `}
+      </style>
     </div>
   );
 }
