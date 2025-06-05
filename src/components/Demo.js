@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 function Demo() {
   const [pdfFile, setPdfFile] = useState(null);
@@ -1026,14 +1027,21 @@ function Demo() {
         zIndex: 1000,
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        <h1 style={{ 
-          color: 'white', 
-          margin: 0, 
-          fontSize: '20px',
-          fontWeight: 'bold'
-        }}>
+        <Link 
+          to="/about"
+          style={{ 
+            color: 'white', 
+            margin: 0, 
+            fontSize: '20px',
+            fontWeight: 'bold',
+            textDecoration: 'none',
+            cursor: 'pointer'
+          }}
+          onMouseOver={(e) => e.target.style.opacity = '0.8'}
+          onMouseOut={(e) => e.target.style.opacity = '1'}
+        >
           GodNote
-        </h1>
+        </Link>
         
         <button
           onClick={() => setShowFeedbackPopup(true)}
@@ -1701,7 +1709,7 @@ function Demo() {
               <textarea
                 value={feedbackAdvice}
                 onChange={(e) => setFeedbackAdvice(e.target.value)}
-                placeholder="GodNote를 사용해보신 경험이나 개선사항, 의견 등을 자유롭게 작성해주세요"
+                placeholder="GodNote 사용 의향에 대한 이유나 개선사항, 기타 의견 등을 자유롭게 작성해주세요"
                 rows="6"
                 style={{
                   width: '100%',
