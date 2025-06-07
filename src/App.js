@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -7,25 +7,6 @@ import Demo from './components/Demo';
 import MVT from './components/MVT';
 import MVT2 from './components/MVT2';
 import axios from 'axios';
-
-// 새로고침 감지 컴포넌트
-function RefreshHandler() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    // 페이지 로드 시 새로고침인지 확인
-    const isRefresh = performance.navigation.type === 1 || 
-                     performance.getEntriesByType('navigation')[0]?.type === 'reload';
-    
-    // 새로고침이고 홈이 아닌 경우 홈으로 리다이렉트
-    if (isRefresh && location.pathname !== '/') {
-      navigate('/', { replace: true });
-    }
-  }, [navigate, location.pathname]);
-
-  return null;
-}
 
 function App() {
   const referrer = useRef(document.referrer);  // 컴포넌트 마운트 전에 referrer 저장
@@ -132,7 +113,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <RefreshHandler />
         <Routes>
           <Route path="/" element={<MVT2 />} />
           <Route path="/about" element={<MVT2 />} />
