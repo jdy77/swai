@@ -19,6 +19,7 @@ function Demo() {
   const [isPreviewMode, setIsPreviewMode] = useState(false); // 편집/프리뷰 모드 토글
   const [leftWidth, setLeftWidth] = useState(50); // 왼쪽 패널 너비 (%)
   const [isResizing, setIsResizing] = useState(false); // 리사이징 상태
+  const [isMobile, setIsMobile] = useState(false); // 모바일 기기 감지 상태 추가
   
   // 팝업 관련 상태 추가
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
@@ -34,6 +35,33 @@ function Demo() {
   const containerRef = useRef(null); // 전체 컨테이너 참조
   const isSubmitting = useRef(false);
   const [forceUpdate, setForceUpdate] = useState(0); // 강제 업데이트용 state 추가
+
+  // 모바일 기기 감지 함수
+  const checkIsMobile = () => {
+    const width = window.innerWidth;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/.test(userAgent);
+    const isMobileWidth = width <= 870; // 1024px 이하를 모바일/태블릿으로 판단
+    
+    return isMobileUserAgent || isMobileWidth;
+  };
+
+  // 모바일 감지 및 리사이즈 감지
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(checkIsMobile());
+    };
+
+    // 초기 체크
+    handleResize();
+
+    // 리사이즈 이벤트 리스너 등록
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // 쿠키 관련 함수들 (MVT.js에서 가져옴)
   const getCookieValue = (name) => {
@@ -1009,6 +1037,68 @@ function Demo() {
       document.body.style.userSelect = '';
     };
   }, [isResizing]);
+
+  // 모바일 기기 접속 시 안내 메시지 표시
+  if (isMobile) {
+    return (
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        backgroundColor: '#f8f9fa',
+        padding: '20px'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          backgroundColor: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          maxWidth: '400px',
+          width: '100%'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '20px'
+          }}>
+            💻
+          </div>
+          
+          <h2 style={{ 
+            color: '#2c3e50',
+            marginBottom: '20px',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}>
+            데스크탑 전용 서비스
+          </h2>
+          
+          <p style={{ 
+            color: '#6c757d',
+            fontSize: '16px',
+            lineHeight: '1.6',
+            marginBottom: '0'
+          }}>
+            현재 모바일 서비스는 지원하지 않습니다.<br/>
+            <strong>노트북이나 데스크탑</strong>으로 접속을 부탁드립니다.
+          </p>
+          
+          <div style={{
+            marginTop: '25px',
+            padding: '15px',
+            backgroundColor: '#e3f2fd',
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#1976d2'
+          }}>
+            <strong>GodNote</strong>는 PDF 노트 필기 도구로<br/>
+            최적의 경험을 위해 큰 화면이 필요합니다.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden' }}>
