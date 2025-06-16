@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import axios from 'axios';
@@ -16,7 +14,7 @@ function Demo() {
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('center');
   const [pageSize, setPageSize] = useState({ width: 595, height: 842 });
-  const [isPreviewMode, setIsPreviewMode] = useState(false); // 편집/프리뷰 모드 토글
+
   const [leftWidth, setLeftWidth] = useState(50); // 왼쪽 패널 너비 (%)
   const [isResizing, setIsResizing] = useState(false); // 리사이징 상태
   const [isMobile, setIsMobile] = useState(false); // 모바일 기기 감지 상태 추가
@@ -146,8 +144,7 @@ function Demo() {
     }
   };
 
-  // 현재 페이지의 노트 내용
-  const currentNote = noteData[currentPage] || '';
+
 
   // HTML을 PDF로 변환하는 함수
   const exportToPdf = async () => {

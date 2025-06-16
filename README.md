@@ -77,8 +77,7 @@ npm start
 - **html2canvas** - HTML 요소를 Canvas로 변환하여 PDF 삽입
 
 ### 📝 텍스트 편집
-- **React Markdown** - 마크다운 문법 렌더링 지원
-- **remark-gfm** - GitHub Flavored Markdown 확장 기능
+- **ContentEditable HTML** - 브라우저 내장 리치텍스트 편집 기능 활용
 
 ### 🌐 통신
 - **Axios** - 사용자 피드백 데이터 전송용 HTTP 클라이언트

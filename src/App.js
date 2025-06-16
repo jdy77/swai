@@ -117,8 +117,6 @@ function App() {
           <Route path="/" element={<MVT2 />} />
           <Route path="/about" element={<MVT2 />} />
           <Route path="/demo" element={<Demo />} />
-          {/* 여기에 새로운 라우트를 추가할 수 있습니다 */}
-          {/* 예: <Route path="/about" element={<About />} /> */}
         </Routes>
       </div>
     </Router>
