@@ -1,75 +1,89 @@
-<<<<<<< HEAD
-# Getting Started with Create React App
-
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
-## Available Scripts
-
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 # GodNote
-=======
-# swai
-SWAI business programming project
+
+PDF 문서에 필기할 수 있는 웹 기반 노트 앱입니다. PDF 파일을 페이지별로 분할하여 표시하고, 각 페이지에 대해 리치텍스트 노트를 작성할 수 있습니다.
+
+## 🚀 코드 실행 과정
+
+### 1. 의존성 설치
+```bash
+npm install
+```
+
+### 2. 개발 서버 실행
+```bash
+npm start
+```
+
+실행 후 브라우저에서 [http://localhost:3000](http://localhost:3000)으로 접속하세요.
+
+## 📖 웹사이트 사용법
+
+### 1. 첫 화면 (MVT 페이지)
+- 웹사이트에 접속하면 첫 화면이 나타납니다
+- **"Get Started"** 버튼을 클릭하여 데모 페이지로 이동합니다
+
+### 2. PDF 파일 업로드
+- 화면 중앙의 업로드 영역을 클릭하여 파일을 직접 선택하거나
+- PDF 파일을 드래그 앤 드롭으로 업로드합니다
+- **PDF 형식(.pdf)** 파일만 지원됩니다
+
+### 3. 필기 기능 사용
+
+#### 📄 PDF 뷰어 (왼쪽 영역)
+- **페이지 네비게이션**: 이전/다음 버튼 또는 드롭다운으로 페이지 이동
+- **표시 모드**: 드롭다운에서 선택
+  - 페이지 맞춤: 페이지 너비에 맞춤
+  - 전체 맞춤: 전체 페이지가 보이도록 맞춤
+  - 세로 맞춤: 페이지 높이에 맞춤
+- **키보드 단축키**: ← → (또는 ↑ ↓) 키로 페이지 이동
+
+#### ✏️ 필기 공간 (오른쪽 영역)
+- **화면 비율 조정**: 가운데 세로 바를 드래그하여 PDF 영역과 필기 영역의 비율을 조정
+- **리치텍스트 편집**: 다양한 서식 옵션 사용 가능
+  - **굵게/기울임/밑줄**: 툴바 버튼 또는 Ctrl+B/I/U 단축키
+  - **제목**: H1, H2, H3 버튼으로 다양한 크기의 제목 삽입
+  - **코드 블록**: `</>` 버튼으로 코드 블록 삽입
+  - **인용문**: `" 인용` 버튼으로 인용문 삽입
+
+#### 🔄 자동 변환 기능
+- `*` 또는 `-` 입력 후 스페이스 → 불릿 포인트 (•)
+- `->` 입력 → 화살표 (→)
+- `<-` 입력 → 왼쪽 화살표 (←)
+- `...` 입력 → 말줄임표 (…)
+
+#### 💾 파일 관리
+- **PDF 저장**: 작성한 노트를 PDF 파일로 내보내기
+- **지우기**: 현재 페이지의 노트 내용 삭제
+- **새 파일**: 새로운 PDF 파일 업로드를 위해 현재 작업 초기화
+
+### 4. 노트 작성 팁
+- 각 페이지별로 독립적인 노트 작성 가능
+- 노트 내용은 자동으로 저장됩니다
+- 페이지 이동 시에도 작성한 내용이 유지됩니다
+
+## 🖥️ 시스템 요구사항
+- **데스크탑 또는 노트북 권장**: 최적의 사용 경험을 위해 큰 화면이 필요합니다
+- **모바일 접속 시**: 데스크탑 접속 안내 메시지가 표시됩니다
+
+## 📝 기술 스택
+- React.js
+- PDF-lib (PDF 처리)
+- html2canvas (HTML to Canvas 변환)
+- jsPDF (PDF 생성)
+- React Markdown (마크다운 렌더링)
+
+## 🔧 추가 스크립트
+
+### 프로덕션 빌드
+```bash
+npm run build
+```
+
+### 테스트 실행
+```bash
+npm test
+```
+
+---
+
+**GodNote**로 PDF 문서에 효율적으로 필기하고 관리해보세요! 📚✨
